@@ -8,6 +8,8 @@ dotenv.config();
 
 const app = express();
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Setup multer for single file upload
 const storage = multer.memoryStorage();
@@ -65,8 +67,8 @@ app.post("/api/send", upload.single("file"), async (req, res) => {
       How did you hear about Vior?:
       ${message}
           `,
-          attachments, // Add the single attachment here
-        };
+    attachments, // Add the single attachment here
+  };
 
   try {
     const info = await transporter.sendMail(mailOptions);
