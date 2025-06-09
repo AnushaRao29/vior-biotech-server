@@ -50,7 +50,7 @@ app.post("/api/send", upload.single("file"), async (req, res) => {
 
   const mailOptions = {
     from: `"${firstName} ${lastName}" <${email}>`,
-    to: "anusharao0629@gmail.com",
+    to: process.env.EMAIL_RECEIVER,
     subject: `📥 New Inquiry from the Client: ${firstName} ${lastName}`,
     text: `
       Name: ${firstName} ${lastName}
