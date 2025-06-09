@@ -80,6 +80,10 @@ app.post("/api/send", upload.single("file"), async (req, res) => {
   }
 });
 
+app.get('/', (req, res) => {
+  res.send('Vior Mail API is running!');
+});
+
 const PORT = 3001;
 app.listen(PORT, () =>
   console.log(`Mail API running at http://localhost:${PORT}`)
