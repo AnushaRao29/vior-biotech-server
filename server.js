@@ -13,7 +13,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Multer for single file upload
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // Max 5MB
+  },
+});
 
 app.post("/api/send", upload.single("file"), async (req, res) => {
   console.log("Received contact form submission");
@@ -39,6 +44,10 @@ app.post("/api/send", upload.single("file"), async (req, res) => {
       user: process.env.GMAIL_USER,
       pass: process.env.GMAIL_PASS,
     },
+    tls: {
+      rejectUnauthorized: false,
+    },
+    connectionTimeout: 10000, // 10s timeout
   });
 
   const attachments = req.file
@@ -50,11 +59,11 @@ app.post("/api/send", upload.single("file"), async (req, res) => {
       ]
     : [];
 
-const mailOptions = {
-  from: `"${firstName} ${lastName}" <${email}>`,
-  to: process.env.EMAIL_RECEIVER,
-  subject: `📥 New Inquiry from the Client: ${firstName} ${lastName}`,
-  html: `
+  const mailOptions = {
+    from: `"${firstName} ${lastName}" <${email}>`,
+    to: process.env.EMAIL_RECEIVER,
+    subject: `📥 New Inquiry from the Client: ${firstName} ${lastName}`,
+    html: `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #f9f9f9; color: #333; border-radius: 8px; border: 1px solid #ddd;">
       <h2 style="color: #007BFF;">📩 New Inquiry Received</h2>
       <hr style="border: none; border-top: 1px solid #ddd;" />
@@ -75,35 +84,39 @@ const mailOptions = {
       </ul>
 
       <h3>Description</h3>
-      <p style="white-space: pre-line;">${description || 'N/A'}</p>
+      <p style="white-space: pre-line;">${description || "N/A"}</p>
 
       <h3>How did you hear about Vior?</h3>
-      <p style="white-space: pre-line;">${message || 'N/A'}</p>
+      <p style="white-space: pre-line;">${message || "N/A"}</p>
 
       <h3>Attachments</h3>
-      <p>${attachments?.length ? `${attachments.length} file(s) attached.` : 'No attachments'}</p>
+      <p>${attachments?.length ? `${attachments.length} file(s) attached.` : "No attachments"}</p>
 
       <hr style="border: none; border-top: 1px solid #ddd;" />
       <p style="font-size: 0.9em; color: #666;">This message was sent from the Vior Contact Form.</p>
     </div>
   `,
-  text: `...`,
-  attachments,
-};
-
+    text: `...`,
+    attachments,
+  };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email sent:", info.response);
     res.json({ success: true, message: "Email sent successfully" });
+    console.time("sendMail");
+    transporter
+      .sendMail(mailOptions)
+      .then((info) => console.log("Email sent:", info.response))
+      .catch((err) => console.error("Email failed:", err));
+    console.timeEnd("sendMail");
+    console.log("Email sent:", info.response);
   } catch (err) {
     console.error("Email failed:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Vior Mail API is running!');
+app.get("/", (req, res) => {
+  res.send("Vior Mail API is running!");
 });
 
 const PORT = 3001;
